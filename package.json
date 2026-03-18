@@ -1,0 +1,45 @@
+{
+  "name": "rudra-ox",
+  "version": "1.0.0",
+  "description": "God-Tier Discord Bot Engineering Architecture - RUDRA.OX v1.0.0",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "deploy": "node dist/deploy.js",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "lint": "eslint src --ext .ts"
+  },
+  "keywords": [
+    "discord",
+    "discord-bot",
+    "bot",
+    "rudra-ox",
+    "music",
+    "moderation",
+    "antinuke"
+  ],
+  "author": "Ashu & Zoro",
+  "license": "PROPRIETARY",
+  "dependencies": {
+    "discord.js": "^14.14.0",
+    "mongoose": "^8.0.0",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.0",
+    "@types/node": "^20.9.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.0",
+    "ts-node": "^10.9.1",
+    "@types/express": "^4.17.21",
+    "prettier": "^3.1.0",
+    "eslint": "^8.53.0",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
