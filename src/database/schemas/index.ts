@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { Antinuke, IAntinuke } from './AntinukeSchema.js';
+import AutomodModel, { IAutomod } from './AutomodSchema.js';
 
 /**
  * VIP SCHEMA
@@ -126,6 +127,11 @@ export interface IUserEconomy extends Document {
   level: number;
   wallet: number;
   bank: number;
+  // Bonus XP system (VIP)
+  bonusXpMultiplier?: number;
+  bonusXpExpires?: Date;
+  bonusXpActivatedAt?: Date;
+  bonusXpActivations?: number;
   updatedAt: Date;
 }
 
@@ -136,6 +142,11 @@ const UserEconomySchema = new Schema<IUserEconomy>({
   level: { type: Number, default: 0 },
   wallet: { type: Number, default: 0 },
   bank: { type: Number, default: 0 },
+  // Bonus XP system (VIP)
+  bonusXpMultiplier: { type: Number, default: 1 },
+  bonusXpExpires: { type: Date, default: null },
+  bonusXpActivatedAt: { type: Date, default: null },
+  bonusXpActivations: { type: Number, default: 0 },
   updatedAt: { type: Date, default: Date.now },
 });
 
@@ -209,5 +220,6 @@ GiveawaySchema.index({ endTime: 1 }, { expireAfterSeconds: 86400 });
 
 export const Giveaway = mongoose.model('Giveaway', GiveawaySchema);
 
-// Export Antinuke model and interface
+// Export Automod and Antinuke models (ensure they register with Mongoose)
+export { AutomodModel as Automod, IAutomod };
 export { Antinuke, IAntinuke };

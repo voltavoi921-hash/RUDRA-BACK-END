@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 /**
  * RUDRA.OX LOGGER UTILITY
  * Centralized logging system for the entire bot
@@ -28,6 +31,21 @@ const colors = {
 
 class Logger {
   private isDevelopment = process.env.NODE_ENV !== 'production';
+  private logFilePath = path.join(process.cwd(), 'bot.log');
+
+  private stripAnsiCodes(input: string): string {
+    // Basic stripping of ANSI escape sequences for clean log output.
+    return input.replace(/\x1b\[[0-9;]*m/g, '');
+  }
+
+  private writeToLogFile(message: string): void {
+    try {
+      const cleanMessage = this.stripAnsiCodes(message);
+      fs.appendFileSync(this.logFilePath, `${cleanMessage}\n`, 'utf-8');
+    } catch {
+      // Ignore logging failures - we still want the bot to function.
+    }
+  }
 
   private formatMessage(level: LogLevel, message: string, args?: any[]): string {
     const timestamp = new Date().toISOString();
@@ -78,25 +96,35 @@ class Logger {
   }
 
   debug(message: string, ...args: any[]): void {
-    if (this.isDevelopment) {
-      console.log(this.formatMessage(LogLevel.DEBUG, message, args));
-    }
+    if (!this.isDevelopment) return;
+
+    const formatted = this.formatMessage(LogLevel.DEBUG, message, args);
+    console.log(formatted);
+    this.writeToLogFile(formatted);
   }
 
   info(message: string, ...args: any[]): void {
-    console.log(this.formatMessage(LogLevel.INFO, message, args));
+    const formatted = this.formatMessage(LogLevel.INFO, message, args);
+    console.log(formatted);
+    this.writeToLogFile(formatted);
   }
 
   success(message: string, ...args: any[]): void {
-    console.log(this.formatMessage(LogLevel.SUCCESS, message, args));
+    const formatted = this.formatMessage(LogLevel.SUCCESS, message, args);
+    console.log(formatted);
+    this.writeToLogFile(formatted);
   }
 
   warn(message: string, ...args: any[]): void {
-    console.warn(this.formatMessage(LogLevel.WARN, message, args));
+    const formatted = this.formatMessage(LogLevel.WARN, message, args);
+    console.warn(formatted);
+    this.writeToLogFile(formatted);
   }
 
   error(message: string, ...args: any[]): void {
-    console.error(this.formatMessage(LogLevel.ERROR, message, args));
+    const formatted = this.formatMessage(LogLevel.ERROR, message, args);
+    console.error(formatted);
+    this.writeToLogFile(formatted);
   }
 }
 

@@ -137,21 +137,21 @@ export default {
           return;
         }
 
-        // Get Guild model
-        if (!db.models['Guild']) {
+        // Get GuildConfig model (stores per-guild settings like prefix)
+        if (!db.models['GuildConfig']) {
           await interaction.editReply({
-            content: '❌ Guild database not initialized.',
+            content: '❌ Guild configuration database not initialized.',
           });
-          logger.error('❌ Guild model not found in database');
+          logger.error('❌ GuildConfig model not found in database');
           return;
         }
 
-        const GuildModel = db.models['Guild'];
+        const GuildConfigModel = db.models['GuildConfig'];
 
-        // Update the guild with custom prefix
-        const updatedGuild = await GuildModel.findOneAndUpdate(
+        // Update the guild configuration with custom prefix
+        const updatedGuild = await GuildConfigModel.findOneAndUpdate(
           { guildId: interaction.guildId },
-          { customPrefix: prefix },
+          { prefix },
           { new: true, upsert: true }
         );
 

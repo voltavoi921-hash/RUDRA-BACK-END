@@ -1,6 +1,9 @@
+import fs from 'fs';
+import path from 'path';
 import { Interaction, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { logger } from '../utils/logger.js';
 import { antiCrashHandler } from '../handlers/antiCrash.js';
+import { isMaintenanceModeEnabled } from '../utils/maintenance.js';
 
 /**
  * EXAMPLE EVENT: interactionCreate
@@ -19,6 +22,14 @@ export default {
    */
   async execute(interaction: Interaction): Promise<void> {
     try {
+      // Debug: log that interactionCreate fired
+      try {
+        const logPath = path.join(process.cwd(), 'interaction.log');
+        fs.appendFileSync(logPath, `${new Date().toISOString()} - interactionCreate: ${interaction.type}\n`);
+      } catch (e) {
+        // ignore
+      }
+
       // Handle slash commands
       if (interaction.isChatInputCommand()) {
         await handleSlashCommand(interaction);
@@ -53,6 +64,20 @@ export default {
  * Handle slash command interactions
  */
 async function handleSlashCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  // Maintenance mode prevents all users from interacting with the bot (except owner)
+  if (isMaintenanceModeEnabled() && interaction.user.id !== process.env.OWNER_ID) {
+    const maintenanceEmbed = new EmbedBuilder()
+      .setColor('#FFB700')
+      .setTitle('🛠️ Maintenance Mode Enabled')
+      .setDescription('The bot is currently in maintenance mode. Please try again later.')
+      .setFooter({ text: '👑 Developed & Owned by Ashu & Zoro' })
+      .setTimestamp();
+
+    await interaction.reply({ embeds: [maintenanceEmbed], ephemeral: true });
+    return;
+  }
+
+
   // Get the command from the client's commands collection
   const client = interaction.client as any;
   const command = client.commands?.get(interaction.commandName);
@@ -63,7 +88,12 @@ async function handleSlashCommand(interaction: ChatInputCommandInteraction): Pro
       .setTitle('❌ Command Not Found')
       .setDescription(`The command \`${interaction.commandName}\` could not be found.`);
 
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
+    } else {
+      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    }
+
     return;
   }
 
@@ -94,6 +124,8 @@ async function handleSlashCommand(interaction: ChatInputCommandInteraction): Pro
         error: String(error),
       }
     );
+  } finally {
+    // Cleanup if needed
   }
 }
 

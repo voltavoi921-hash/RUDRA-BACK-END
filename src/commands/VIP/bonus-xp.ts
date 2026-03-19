@@ -77,16 +77,16 @@ export default {
           return;
         }
 
-        // Get User model
-        if (!db.models['User']) {
+        // Get UserEconomy model
+        if (!db.models['UserEconomy']) {
           await interaction.editReply({
-            content: '❌ User database not initialized.',
+            content: '❌ Economy database not initialized.',
           });
-          logger.error('❌ User model not found in database');
+          logger.error('❌ UserEconomy model not found in database');
           return;
         }
 
-        const UserModel = db.models['User'];
+        const UserModel = db.models['UserEconomy'];
 
         // Calculate 24-hour expiry timestamp
         const now = new Date();

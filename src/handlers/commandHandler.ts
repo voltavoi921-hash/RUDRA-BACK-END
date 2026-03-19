@@ -76,8 +76,8 @@ class CommandHandler {
       if (stat.isDirectory()) {
         // Recursively search subdirectories
         this.getCommandFiles(filePath, fileList);
-      } else if (file.endsWith('.js') && !file.endsWith('.d.ts')) {
-        // Only include JavaScript files (compiled), not TypeScript declaration files
+      } else if ((file.endsWith('.ts') || file.endsWith('.js')) && !file.endsWith('.d.ts')) {
+        // Only include TypeScript and JavaScript files, not TypeScript declaration files
         fileList.push(filePath);
       }
     });
@@ -151,25 +151,28 @@ class CommandHandler {
 
       const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN || '');
 
-      // Global commands (takes ~1 hour to update on Discord)
-      // For development, use guild-based commands for instant updates
+      // Prefer guild command registration when DEV_GUILD_ID is provided (instant updates)
+      const devGuildId = process.env.DEV_GUILD_ID;
+      if (devGuildId) {
+        await rest.put(Routes.applicationGuildCommands(this.client.user?.id || '', devGuildId), {
+          body: commands,
+        });
+        logger.success(`✅ Slash commands registered to dev guild (instant update)`);
+        return;
+      }
+
+      // Otherwise, default to global registration (takes up to 1 hour to update)
       if (process.env.NODE_ENV === 'production') {
         await rest.put(Routes.applicationCommands(this.client.user?.id || ''), {
           body: commands,
         });
         logger.success('✅ Slash commands registered globally (1 hour to propagate)');
       } else {
-        // Development: Register to specific guild for instant updates
-        const devGuildId = process.env.DEV_GUILD_ID;
-        if (!devGuildId) {
-          logger.warn('⚠️  DEV_GUILD_ID not set. Skipping guild command registration.');
-          return;
-        }
-
-        await rest.put(Routes.applicationGuildCommands(this.client.user?.id || '', devGuildId), {
+        logger.warn('⚠️  DEV_GUILD_ID not set. Registering commands globally (may take up to 1 hour).');
+        await rest.put(Routes.applicationCommands(this.client.user?.id || ''), {
           body: commands,
         });
-        logger.success(`✅ Slash commands registered to dev guild (instant update)`);
+        logger.success('✅ Slash commands registered globally (1 hour to propagate)');
       }
     } catch (error) {
       logger.error('❌ Failed to register slash commands:', error);
@@ -247,7 +250,9 @@ class CommandHandler {
 export async function setupCommandHandler(client: Client): Promise<void> {
   const handler = new CommandHandler(client);
   await handler.loadCommands();
-  await handler.registerSlashCommands();
 }
 
-export { CommandHandler };
+export async function registerSlashCommands(client: Client): Promise<void> {
+  const handler = new CommandHandler(client);
+  await handler.registerSlashCommands();
+}

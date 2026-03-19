@@ -8,16 +8,41 @@ import {
   ActivityType,
 } from 'discord.js';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 import { logger } from './utils/logger.js';
 import { mongooseEngine } from './database/mongoose.js';
 import { antiCrashHandler } from './handlers/antiCrash.js';
-import { setupCommandHandler } from './handlers/commandHandler.js';
+import { setupCommandHandler, registerSlashCommands } from './handlers/commandHandler.js';
 import { setupEventHandler } from './handlers/eventHandler.js';
-// ✅ Import all schemas to register models with mongoose
-import { VIP, GuildConfig, VoiceSetup, TicketPanel, UserEconomy, UserStrikes, Giveaway } from './database/schemas/index.js';
+// ✅ Import all schemas to register models with mongoose (side-effect import)
+import './database/schemas/index.js';
 
 // Load environment variables
 dotenv.config();
+
+// Ensure .env has required keys (auto-add if missing)
+const requiredEnvKeys: Record<string, string> = {
+  PREFIX: '!',
+};
+
+function ensureEnvKey(key: string, defaultValue: string): void {
+  if (process.env[key]) return;
+
+  const envPath = path.join(process.cwd(), '.env');
+  if (!fs.existsSync(envPath)) return;
+
+  const content = fs.readFileSync(envPath, 'utf-8');
+  if (!new RegExp(`^${key}\\s*=`, 'm').test(content)) {
+    fs.appendFileSync(envPath, `\n${key}=${defaultValue}\n`, 'utf-8');
+    process.env[key] = defaultValue;
+    logger.info(`✅ Added ${key}=${defaultValue} to .env (auto)`);
+  }
+}
+
+Object.entries(requiredEnvKeys).forEach(([key, defaultValue]) => {
+  ensureEnvKey(key, defaultValue);
+});
 
 /**
  * RUDRA.OX MAIN ENTRY POINT
@@ -100,6 +125,7 @@ async function initializeBot(): Promise<void> {
     
     // ✅ Verify all models are registered by checking the connection object
     console.log('✅ [MODELS CHECK] Checking registered models in mongoose connection...');
+    console.log('✅ [MODELS] Registered models:', Object.keys((await import('mongoose')).connection.models));
     // Models are accessible via mongoose.connection.models after they're imported
     logger.info('');
 
@@ -156,6 +182,13 @@ client.once('ready', async () => {
     logger.success('╚════════════════════════════════════════════════════════════════╝');
     logger.success('');
 
+    // Log guild details
+    logger.info('🏢 Connected Guilds:');
+    client.guilds.cache.forEach(guild => {
+      logger.info(`  - ${guild.name} (${guild.id})`);
+    });
+    logger.info('');
+
     // Set bot activity
     client.user.setActivity('RUDRA.OX v1.0.0 | /help', { type: ActivityType.Watching });
     logger.info('📊 Bot Status: WATCHING RUDRA.OX v1.0.0 | /help');
@@ -168,6 +201,12 @@ client.once('ready', async () => {
     if (client.commands && client.commands.size > 0) {
       logger.success(`🎯 Commands Loaded: ${client.commands.size}`);
     }
+
+    // Register slash commands now that client.user is available
+    logger.info('⏳ Registering slash commands...');
+    const { registerSlashCommands } = await import('./handlers/commandHandler.js');
+    await registerSlashCommands(client);
+    logger.success('✅ Slash commands registered');
 
     // Send startup notification to monitoring channel (optional)
     if (process.env.STARTUP_CHANNEL_ID) {

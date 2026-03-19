@@ -49,7 +49,7 @@ class EventHandler {
       // Read all event files
       const eventFiles = fs
         .readdirSync(eventsPath)
-        .filter((file) => file.endsWith('.js') && !file.endsWith('.d.ts'));
+        .filter((file) => (file.endsWith('.ts') || file.endsWith('.js')) && !file.endsWith('.d.ts'));
 
       logger.info(`🔍 Found ${eventFiles.length} event files`);
 

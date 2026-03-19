@@ -89,15 +89,41 @@ export default {
         durationText = 'Lifetime';
       }
 
-      // TODO: Save to VIP Database
-      // Example:
-      // const vipDoc = new VIPModel({
-      //   userId: targetUser.id,
-      //   grantedBy: interaction.user.id,
-      //   grantedAt: new Date(),
-      //   expiresAt: expiryDate,
-      // });
-      // await vipDoc.save();
+      // Save to VIP database
+      try {
+        const { default: mongoose } = await import('mongoose');
+        const db = mongoose.connection;
+
+        if (!db.models['VIP']) {
+          await interaction.editReply({
+            content: '❌ Database connection error.',
+          });
+          logger.error('❌ VIP model not found in database');
+          return;
+        }
+
+        const VIPModel = db.models['VIP'];
+
+        const vipTier = duration === 'lifetime' ? 'VIP_PRTR' : 'VIP';
+
+        await VIPModel.findOneAndUpdate(
+          { userId: targetUser.id },
+          {
+            userId: targetUser.id,
+            tier: vipTier,
+            grantedBy: interaction.user.id,
+            expiresAt: expiryDate,
+            createdAt: new Date(),
+          },
+          { upsert: true, new: true }
+        );
+      } catch (dbError) {
+        logger.error('❌ Database error while granting VIP status:', dbError);
+        await interaction.editReply({
+          content: '❌ Failed to save VIP status to the database.',
+        });
+        return;
+      }
 
       // Create success embed
       const successEmbed = new EmbedBuilder()
